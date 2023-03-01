@@ -4,8 +4,8 @@ library(DT)
 
 # data from VDOE Fall Membership Build-a-Table
 # https://p1pe.doe.virginia.gov/apex_captcha/home.do?apexTypeId=304
-# Query parameters: new_fall_membership_race.csv
-#   school years = 2019-2020, 2021-2022 (for pre-pandemic comparison)
+# Query parameters: 2023_fall_membership_race.csv
+#   school years = 2019-2020, 2020-2021, 2021-2022, 2022-2023 
 #   report level = school
 #   divisions = charlottesville, albemarle
 #   schools = all schools
@@ -13,8 +13,8 @@ library(DT)
 #   grades = all grades (aggregated, not individual grades)
 #   [everything else] = all students
 #   
-# Query parameters: new_fall_membership_disadvantaged.csv
-#   school years = 2019-2020, 2020-2021, 2021-2022 (for pre-pandemic comparison)
+# Query parameters: 2023_fall_membership_disadvantaged.csv
+#   school years = 2019-2020, 2020-2021, 2021-2022, 2022-2023 
 #   report level = school
 #   divisions = charlottesville, albemarle
 #   schools = all schools
@@ -24,9 +24,9 @@ library(DT)
 #   [everything else] = all students
 
 # read data ----
-race_ethn <- read_csv("new_fall_membership_race.csv") %>% 
+race_ethn <- read_csv("2023_fall_membership_race.csv") %>% 
   clean_names()
-disadvant <- read_csv("new_fall_membership_disadvantaged.csv") %>% 
+disadvant <- read_csv("2023_fall_membership_disadvantaged.csv") %>% 
   clean_names()
   
 # what schools
@@ -48,8 +48,56 @@ disadvant %>% filter(school_year == "2021-2022") %>%
 # sutherland becomes lakeside; 
 # community lab school added, murray subtracted (community lab is formerly murray)
 
+race_ethn %>% filter(school_year == "2022-2023") %>% 
+    distinct(school_name)
+disadvant %>% filter(school_year == "2022-2023") %>% 
+    distinct(school_name)
+
+# jack jouett becomes journey
+
+
 # tables ----
 # separately by year
+
+# fall 2022
+
+race2023 <- race_ethn %>% filter(school_year == "2022-2023") %>% 
+  select(-c(division_number, school_number, full_time_count_all_grades, part_time_count_all_grades)) %>% 
+  rename(count = total_count) %>% 
+  group_by(school_name) %>% 
+  mutate(num_students = sum(count)) %>% 
+  ungroup() %>% 
+  mutate(percent = (count/num_students)*100,
+         percent = round(percent, 1)) %>% 
+  pivot_wider(names_from = race, values_from = c(count, percent)) %>% 
+  mutate(across(where(is.numeric), ~replace(., is.na(.), 0)))
+
+colnames(race2023)
+
+names(race2023) <- c("year", "division", "school", "students",
+                     "count_asian", "count_black",
+                     "count_latinx", "count_white",
+                     "count_aian", "count_nhpi", "perc_asian", 
+                     "perc_black", "perc_latinx",
+                     "perc_white", "perc_aian", "perc_nhpi" )
+
+dis2023 <- disadvant %>% filter(school_year == "2022-2023") %>% 
+  mutate(count = if_else(total_count == "<", "9", total_count), # based on total students in race2022
+         count = str_remove(count, ","),
+         count = as.integer(count)) %>% 
+  select(-c(division_number, school_number, full_time_count_all_grades, part_time_count_all_grades, total_count)) %>% 
+  group_by(school_name) %>% 
+  mutate(num_students = sum(count, na.rm = TRUE)) %>% 
+  ungroup() %>% 
+  mutate(percent = (count/num_students)*100,
+         percent = round(percent, 1)) %>% 
+  pivot_wider(names_from = disadvantaged, values_from = c(count, percent)) %>% 
+  mutate(across(where(is.numeric), ~replace(., is.na(.), 0)))
+
+colnames(dis2023)
+names(dis2023) <- c("year", "division", "school", "students", 
+                    "count_adv", "count_disadv", "perc_adv", "perc_disadv")
+
 
 # fall 2021
 
@@ -124,7 +172,7 @@ colnames(dis2021)
 names(dis2021) <- c("year", "division", "school", "students", 
                     "count_adv", "count_disadv", "perc_adv", "perc_disadv")
 
-# fall 2019 (pre-covid)
+# fall 2019 
 race2020 <- race_ethn %>% filter(school_year == "2019-2020") %>% 
   select(-c(division_number, school_number, full_time_count_all_grades, part_time_count_all_grades)) %>% 
   rename(count = total_count) %>% 
@@ -161,11 +209,12 @@ names(dis2020) <- c("year", "division", "school", "students",
                     "count_adv", "count_disadv", "perc_adv", "perc_disadv")
 
 # combine tables and save
+students2023 <- left_join(race2023, dis2023, by = c("year", "division", "school")) %>% select(-"students.y", students = "students.x")
 students2022 <- left_join(race2022, dis2022, by = c("year", "division", "school")) %>% select(-"students.y", students = "students.x")
 students2021 <- left_join(race2021, dis2021, by = c("year", "division", "school")) %>% select(-"students.y", students = "students.x")
 students2020 <- left_join(race2020, dis2020, by = c("year", "division", "school")) %>% select(-"students.y", students = "students.x")
 
-save(students2020, students2021, students2022, file = "newstudents.Rdata")
+save(students2023, students2020, students2021, students2022, file = "newstudents.Rdata")
 
 
 # # Colors

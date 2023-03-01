@@ -1,6 +1,23 @@
 # Explore graduation data
 # on-time and diploma
-# 2019-2021 only
+# 2019-2021 only available years (as of 3/1/2023)
+
+## VDOE Download Data from School Quality Profiles
+
+### query parameters for "diplomas.csv"
+# Reporting Level: "Division"
+# Divisions: select each division
+# Data Type: "college and career readiness" 
+# Indicators: "diplomas and completion"
+# School Year: "all years available"
+
+### query parameters for "gradrate.csv"
+# Reporting Level: "Division"
+# Divisions: select each division
+# Data Type: "college and career readiness" 
+# Indicators: "on-time graduation rate"
+# School Year: "all years available"
+
 
 library(tidyverse)
 library(janitor)
